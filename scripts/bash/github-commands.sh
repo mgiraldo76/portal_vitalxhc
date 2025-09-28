@@ -6,7 +6,7 @@
 branchname="initualcode"       # the branch name - always populate with the branch name in question
 createbranch=""     # yes 
 commitcomment="code"    # the commit comment
-ispush=""           # yes when ready to push
+ispush="yes"           # yes when ready to push
 
 if [ -n "$branchname" ]; then
 
