@@ -105,5 +105,5 @@ export const hasFirebaseConfig = (): boolean => {
   )
 }
 
-export const auth = null
-export const db = null
+export const auth = getFirebaseAuth()
+export const db = getFirebaseDb()

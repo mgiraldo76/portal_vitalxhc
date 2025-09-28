@@ -3,9 +3,9 @@
 
 #	Create your new branch
 #git checkout -b <branchname>
-branchname="initialcode"       # the branch name - always populate with the branch name in question
+branchname="fixes"       # the branch name - always populate with the branch name in question
 createbranch=""     # yes 
-commitcomment="code"    # the commit comment
+commitcomment="fixes in the db variables"    # the commit comment
 ispush="yes"           # yes when ready to push
 
 if [ -n "$branchname" ]; then
