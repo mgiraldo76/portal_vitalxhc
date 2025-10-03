@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Twilio configuration
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER
+// Telnyx configuration
+const TELNYX_API_KEY = process.env.TELNYX_API_KEY
+const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,31 +12,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Phone number and message are required" }, { status: 400 })
     }
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    if (!TELNYX_API_KEY || !TELNYX_PHONE_NUMBER) {
       return NextResponse.json(
         {
-          error:
-            "Twilio configuration missing. Please add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to your environment variables.",
+          error: "Telnyx configuration missing. Please add TELNYX_API_KEY and TELNYX_PHONE_NUMBER to your environment variables.",
         },
         { status: 500 },
       )
     }
 
-    // Create Twilio client
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
+    // Telnyx API endpoint
+    const telnyxUrl = "https://api.telnyx.com/v2/messages"
 
-    const formData = new URLSearchParams()
-    formData.append("From", TWILIO_PHONE_NUMBER)
-    formData.append("To", to)
-    formData.append("Body", message)
+    const payload = {
+      from: TELNYX_PHONE_NUMBER,
+      to: to,
+      text: message,
+    }
 
-    const response = await fetch(twilioUrl, {
+    const response = await fetch(telnyxUrl, {
       method: "POST",
       headers: {
-        Authorization: `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${TELNYX_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify(payload),
     })
 
     const result = await response.json()
@@ -45,11 +44,14 @@ export async function POST(request: NextRequest) {
     if (response.ok) {
       return NextResponse.json({
         success: true,
-        messageId: result.sid,
-        status: result.status,
+        messageId: result.data?.id,
+        status: result.data?.status,
       })
     } else {
-      return NextResponse.json({ error: result.message || "Failed to send SMS" }, { status: response.status })
+      return NextResponse.json(
+        { error: result.errors?.[0]?.detail || "Failed to send SMS" },
+        { status: response.status },
+      )
     }
   } catch (error) {
     console.error("SMS sending error:", error)
