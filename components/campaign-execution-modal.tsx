@@ -50,7 +50,7 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
       // Auto-close after successful completion
       setTimeout(() => {
         onComplete()
-      }, 3000)
+      }, 7000)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
       const errorStack = err instanceof Error ? err.stack : undefined
