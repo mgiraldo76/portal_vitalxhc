@@ -3,9 +3,9 @@
 
 #	Create your new branch
 #git checkout -b <branchname>
-branchname="fixes"       # the branch name - always populate with the branch name in question
+branchname="fixes_to_telnyx"       # the branch name - always populate with the branch name in question
 createbranch=""     # yes 
-commitcomment="fixes in the db variables"    # the commit comment
+commitcomment="Fix Firestore undefined error and add enhanced logging"    # the commit comment
 ispush="yes"           # yes when ready to push
 
 if [ -n "$branchname" ]; then

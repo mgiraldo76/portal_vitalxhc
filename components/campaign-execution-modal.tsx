@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, XCircle, Clock, AlertTriangle, MessageSquare } from "lucide-react"
-import { executeCampaign, type Campaign, type CampaignExecutionResult } from "@/lib/messaging"
+import { executeCampaign, type CampaignExecutionResult } from "@/lib/messaging"
+import { type Campaign } from "@/lib/firestore"
 
 interface CampaignExecutionModalProps {
   campaign: Campaign
@@ -52,6 +53,26 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
       }, 3000)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
+      const errorStack = err instanceof Error ? err.stack : undefined
+      
+      // ✅ Log to server for Vercel logs
+      try {
+        await fetch("/api/log-error", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            context: "campaign_execution",
+            campaign_id: campaign.id,
+            campaign_name: campaign.name,
+            error_message: errorMessage,
+            error_stack: errorStack,
+            timestamp: new Date().toISOString(),
+          }),
+        })
+      } catch (logError) {
+        console.error("Failed to log error to server:", logError)
+      }
+      
       setError(errorMessage)
     } finally {
       setExecuting(false)
@@ -85,7 +106,7 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Methods:</span>
                   <div className="flex space-x-1">
-                    {campaign.methods.map((method) => (
+                    {campaign.methods.map((method: "sms" | "whatsapp") => (
                       <span key={method} className="px-2 py-1 rounded text-xs bg-secondary text-secondary-foreground">
                         {method.toUpperCase()}
                       </span>
@@ -126,7 +147,9 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
           {/* Results */}
           {result && (
             <Card
-              className={`border-border/50 ${result.successCount > 0 ? "bg-green-50 dark:bg-green-950/20" : "bg-red-50 dark:bg-red-950/20"}`}
+              className={`border-border/50 ${
+                result.successCount > 0 ? "bg-green-50 dark:bg-green-950/20" : "bg-red-50 dark:bg-red-950/20"
+              }`}
             >
               <CardContent className="pt-4">
                 <div className="flex items-start space-x-3">
@@ -155,25 +178,21 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
                         <span className="text-muted-foreground">Success Rate:</span>
                         <span className="font-medium ml-1">
                           {result.totalRecipients > 0
-                            ? Math.round((result.successCount / result.totalRecipients) * 100)
-                            : 0}
-                          %
+                            ? `${Math.round((result.successCount / result.totalRecipients) * 100)}%`
+                            : "0%"}
                         </span>
                       </div>
                     </div>
 
                     {result.errors.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-red-600 font-medium">Errors:</p>
-                        <div className="max-h-20 overflow-y-auto">
-                          {result.errors.slice(0, 3).map((error, index) => (
-                            <p key={index} className="text-xs text-red-600">
+                      <div className="mt-4 space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">Errors:</p>
+                        <div className="max-h-32 overflow-y-auto space-y-1">
+                          {result.errors.map((error, index) => (
+                            <p key={index} className="text-xs text-red-600 dark:text-red-400">
                               {error}
                             </p>
                           ))}
-                          {result.errors.length > 3 && (
-                            <p className="text-xs text-red-600">... and {result.errors.length - 3} more</p>
-                          )}
                         </div>
                       </div>
                     )}
@@ -185,36 +204,24 @@ export function CampaignExecutionModal({ campaign, open, onClose, onComplete }: 
 
           {/* Error Display */}
           {error && (
-            <Card className="border-border/50 bg-red-50 dark:bg-red-950/20">
+            <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20">
               <CardContent className="pt-4">
                 <div className="flex items-start space-x-3">
                   <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-red-600">Execution Failed</p>
-                    <p className="text-xs text-red-600 mt-1">{error}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-900 dark:text-red-100">Execution Failed</p>
+                    <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div>
-              {result && result.successCount > 0 && (
-                <p className="text-xs text-green-600">Campaign completed successfully!</p>
-              )}
-            </div>
-            <div className="flex space-x-2">
-              {error && (
-                <Button variant="outline" onClick={handleExecute} disabled={executing}>
-                  Retry
-                </Button>
-              )}
-              <Button onClick={handleClose} disabled={executing}>
-                {result ? "Close" : "Cancel"}
-              </Button>
-            </div>
+          {/* Close Button */}
+          <div className="flex justify-end">
+            <Button onClick={handleClose} disabled={executing}>
+              Close
+            </Button>
           </div>
         </div>
       </DialogContent>
