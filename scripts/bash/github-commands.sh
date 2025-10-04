@@ -3,9 +3,9 @@
 
 #	Create your new branch
 #git checkout -b <branchname>
-branchname="fixes_to_telnyx2"       # the branch name - always populate with the branch name in question
+branchname="fixes_to_telnyx3"       # the branch name - always populate with the branch name in question
 createbranch=""     # yes 
-commitcomment="nextconfigmjs fix"    # the commit comment
+commitcomment="adding .env"    # the commit comment
 ispush="yes"           # yes when ready to push
 
 if [ -n "$branchname" ]; then
