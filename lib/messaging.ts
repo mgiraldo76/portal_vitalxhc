@@ -122,6 +122,11 @@ export async function executeCampaign(
   campaign: Campaign,
   onProgress?: (progress: { sent: number; total: number; currentRecipient: string }) => void,
 ): Promise<CampaignExecutionResult> {
+  // ✅ Check if db is initialized
+  if (!db) {
+    throw new Error("Firebase is not initialized. Please check your Firebase configuration.")
+  }
+
   if (!campaign.id) {
     throw new Error("Campaign ID is required")
   }
@@ -200,13 +205,25 @@ export async function executeCampaign(
             recipientErrors.push(`${method.toUpperCase()}: ${messageResult.error}`)
           }
 
-          // Update campaign recipient status
-          await updateDoc(doc(db, "campaign_recipients", campaignRecipient.id!), {
+          // ✅ FIXED: Build update object conditionally to avoid undefined values
+          const updateData: any = {
             status: messageResult.success ? "sent" : "failed",
-            sent_datetime: messageResult.success ? Timestamp.now() : undefined,
             attempts: messageResult.attempts,
-            error_message: messageResult.error || undefined,
-          })
+          }
+
+          // Only add sent_datetime if message was successful
+          if (messageResult.success) {
+            updateData.sent_datetime = Timestamp.now()
+          }
+
+          // Only add error_message if there was an error
+          if (messageResult.error) {
+            updateData.error_message = messageResult.error
+          }
+
+          // Update campaign recipient status
+          await updateDoc(doc(db, "campaign_recipients", campaignRecipient.id!), updateData)
+
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : "Unknown error"
           recipientErrors.push(`${method.toUpperCase()}: ${errorMsg}`)
@@ -244,14 +261,24 @@ export async function executeCampaign(
       campaign_id: campaign.id,
     })
   } catch (error) {
+    // Enhanced logging for Vercel
+    const errorMsg = error instanceof Error ? error.message : "Unknown error"
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    console.error("=== CAMPAIGN EXECUTION FAILED ===")
+    console.error("Campaign ID:", campaign.id)
+    console.error("Campaign Name:", campaign.name)
+    console.error("Error Message:", errorMsg)
+    console.error("Error Stack:", errorStack)
+    console.error("================================")
+
     // Update campaign status back to draft on error
-    if (campaign.id) {
+    if (campaign.id && db) {
       await updateDoc(doc(db, "campaigns", campaign.id), {
         status: "draft",
       })
     }
 
-    const errorMsg = error instanceof Error ? error.message : "Unknown error"
     result.errors.push(`Campaign execution failed: ${errorMsg}`)
 
     // Log campaign failure
@@ -261,6 +288,7 @@ export async function executeCampaign(
       details: {
         campaign_id: campaign.id,
         error: errorMsg,
+        stack: errorStack?.substring(0, 1000),
       },
       timestamp: Timestamp.now(),
       campaign_id: campaign.id,

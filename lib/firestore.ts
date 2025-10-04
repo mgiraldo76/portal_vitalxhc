@@ -54,15 +54,25 @@ export interface UserEventLog {
   campaign_id?: string
 }
 
+// Helper function to check db initialization
+function ensureDb() {
+  if (!db) {
+    throw new Error("Firebase is not initialized. Please check your Firebase configuration.")
+  }
+  return db
+}
+
 // Campaign functions
 export async function createCampaign(campaign: Omit<Campaign, "id">) {
-  const docRef = await addDoc(collection(db, "campaigns"), campaign)
+  const database = ensureDb()
+  const docRef = await addDoc(collection(database, "campaigns"), campaign)
   return docRef.id
 }
 
 export async function getCampaigns(userId: string, pageSize = 15, lastDoc?: any) {
+  const database = ensureDb()
   let q = query(
-    collection(db, "campaigns"),
+    collection(database, "campaigns"),
     where("created_by", "==", userId),
     orderBy("created_datetime", "desc"),
     limit(pageSize),
@@ -85,29 +95,34 @@ export async function getCampaigns(userId: string, pageSize = 15, lastDoc?: any)
 }
 
 export async function updateCampaign(campaignId: string, updates: Partial<Campaign>) {
-  const campaignRef = doc(db, "campaigns", campaignId)
+  const database = ensureDb()
+  const campaignRef = doc(database, "campaigns", campaignId)
   await updateDoc(campaignRef, updates)
 }
 
 // Recipient functions
 export async function createRecipient(recipient: Omit<Recipient, "id">) {
-  const docRef = await addDoc(collection(db, "recipients"), recipient)
+  const database = ensureDb()
+  const docRef = await addDoc(collection(database, "recipients"), recipient)
   return docRef.id
 }
 
 export async function getRecipientByPhone(telephone: string) {
-  const q = query(collection(db, "recipients"), where("telephone", "==", telephone), limit(1))
+  const database = ensureDb()
+  const q = query(collection(database, "recipients"), where("telephone", "==", telephone), limit(1))
   const snapshot = await getDocs(q)
   return snapshot.empty ? null : ({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Recipient)
 }
 
 export async function updateRecipient(recipientId: string, updates: Partial<Recipient>) {
-  const recipientRef = doc(db, "recipients", recipientId)
+  const database = ensureDb()
+  const recipientRef = doc(database, "recipients", recipientId)
   await updateDoc(recipientRef, updates)
 }
 
 export async function getRecipients(pageSize = 50) {
-  const q = query(collection(db, "recipients"), orderBy("created_datetime", "desc"), limit(pageSize))
+  const database = ensureDb()
+  const q = query(collection(database, "recipients"), orderBy("created_datetime", "desc"), limit(pageSize))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -117,8 +132,9 @@ export async function getRecipients(pageSize = 50) {
 
 // Campaign Recipients functions
 export async function addCampaignRecipients(campaignId: string, recipientIds: string[]) {
+  const database = ensureDb()
   const promises = recipientIds.map((recipientId) =>
-    addDoc(collection(db, "campaign_recipients"), {
+    addDoc(collection(database, "campaign_recipients"), {
       campaign_id: campaignId,
       recipient_id: recipientId,
       status: "pending",
@@ -129,7 +145,8 @@ export async function addCampaignRecipients(campaignId: string, recipientIds: st
 }
 
 export async function getCampaignRecipients(campaignId: string) {
-  const q = query(collection(db, "campaign_recipients"), where("campaign_id", "==", campaignId))
+  const database = ensureDb()
+  const q = query(collection(database, "campaign_recipients"), where("campaign_id", "==", campaignId))
   const snapshot = await getDocs(q)
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -139,5 +156,6 @@ export async function getCampaignRecipients(campaignId: string) {
 
 // Logging function
 export async function logUserEvent(event: Omit<UserEventLog, "id">) {
-  await addDoc(collection(db, "user_event_log"), event)
+  const database = ensureDb()
+  await addDoc(collection(database, "user_event_log"), event)
 }
