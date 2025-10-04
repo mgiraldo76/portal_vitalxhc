@@ -1,3 +1,4 @@
+
 import { updateDoc, doc, Timestamp } from "firebase/firestore"
 import { db } from "./firebase"
 import { logUserEvent, getCampaignRecipients, getRecipients, type Campaign } from "./firestore"
@@ -203,6 +204,15 @@ export async function executeCampaign(
             })
           } else {
             recipientErrors.push(`${method.toUpperCase()}: ${messageResult.error}`)
+            
+            // ✅ Log failed message details to Vercel
+            console.error("=== MESSAGE SEND FAILED ===")
+            console.error("Campaign:", campaign.id)
+            console.error("Recipient:", recipient.name, recipient.telephone)
+            console.error("Method:", method)
+            console.error("Error:", messageResult.error)
+            console.error("Attempts:", messageResult.attempts)
+            console.error("==========================")
           }
 
           // ✅ FIXED: Build update object conditionally to avoid undefined values
@@ -227,6 +237,15 @@ export async function executeCampaign(
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : "Unknown error"
           recipientErrors.push(`${method.toUpperCase()}: ${errorMsg}`)
+          
+          // ✅ Log exception to Vercel
+          console.error("=== EXCEPTION DURING MESSAGE SEND ===")
+          console.error("Campaign:", campaign.id)
+          console.error("Recipient:", recipient.name)
+          console.error("Method:", method)
+          console.error("Exception:", errorMsg)
+          console.error("Stack:", error instanceof Error ? error.stack : "No stack")
+          console.error("====================================")
         }
       }
 
@@ -261,7 +280,7 @@ export async function executeCampaign(
       campaign_id: campaign.id,
     })
   } catch (error) {
-    // Enhanced logging for Vercel
+    // ✅ Enhanced logging for Vercel
     const errorMsg = error instanceof Error ? error.message : "Unknown error"
     const errorStack = error instanceof Error ? error.stack : undefined
     
@@ -270,6 +289,7 @@ export async function executeCampaign(
     console.error("Campaign Name:", campaign.name)
     console.error("Error Message:", errorMsg)
     console.error("Error Stack:", errorStack)
+    console.error("Results so far:", JSON.stringify(result))
     console.error("================================")
 
     // Update campaign status back to draft on error
