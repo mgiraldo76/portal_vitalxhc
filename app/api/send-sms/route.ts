@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { config } from "@/lib/config"
 
 // Telnyx configuration
-const TELNYX_API_KEY = process.env.TELNYX_API_KEY
-const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER
+const TELNYX_API_KEY = config.TELNYX_API_KEY
+const TELNYX_PHONE_NUMBER = config.TELNYX_PHONE_NUMBER
+// Telnyx configuration
+//const TELNYX_API_KEY = process.env.TELNYX_API_KEY
+//const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER
 
 export async function POST(request: NextRequest) {
   try {
