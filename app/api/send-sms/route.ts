@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       from: TELNYX_PHONE_NUMBER,
       to: to,
       text: message,
+      messaging_profile_id: config.TELNYX_MESSAGING_PROFILE_ID,
     }
 
     const response = await fetch(telnyxUrl, {
