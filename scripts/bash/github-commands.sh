@@ -5,7 +5,7 @@
 #git checkout -b <branchname>
 branchname="fixes_to_telnyx5"       # the branch name - always populate with the branch name in question
 createbranch=""     # yes 
-commitcomment="adding key"    # the commit comment
+commitcomment="adding info"    # the commit comment
 ispush="yes"           # yes when ready to push
 
 if [ -n "$branchname" ]; then
